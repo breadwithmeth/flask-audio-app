@@ -1,95 +1,52 @@
-html -->
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <title>Аудио Стример</title>
+    <title>Архив Записей</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; }
-        #status, #deviceInfo { margin-top: 15px; font-weight: bold; }
-        #error { margin-top: 15px; color: red; font-weight: bold; }
-        audio { margin-top: 15px; width: 100%; }
-        .status-active { color: green; }
-        .status-inactive { color: red; }
+        body { font-family: Arial; padding: 20px; }
+        .player { margin: 20px 0; }
+        .recording {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .datetime {
+            color: #666;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Аудио Стример</h1>
-        <div id="deviceInfo">Микрофон: {{ device_name | safe }}</div>
-        <div id="status">Состояние:
-            <span class="{{ 'status-active' if status == 'Активна' else 'status-inactive' }}">
-                {{ status }}
-            </span>
-        </div>
-        <div id="error"></div> <!-- Для вывода возможных ошибок подключения к стриму -->
-
-        <h2>Аудио Поток</h2>
-        <p>
-            Запись и сохранение идут автоматически на сервере.
-            Нажмите Play для прослушивания текущего потока.
-        </p>
-        <audio id="audioPlayer" controls preload="none"> <!-- preload="none" чтобы не начинал грузить сразу -->
-             <source src="/audio_feed?t={{ range(1, 10000) | random }}" type="audio/wav">
-             <!-- Добавлен случайный параметр t для предотвращения кэширования -->
-             Ваш браузер не поддерживает элемент audio.
-        </audio>
+    <h1>Архив Записей</h1>
+    <h2>Статус записи: {{ status }}</h2>
+    
+    <div id="recordings">
+        {% if recordings %}
+            {% for rec in recordings %}
+            <div class="recording">
+                <div class="datetime">{{ rec.datetime }}</div>
+                <audio controls>
+                    <source src="{{ url_for('serve_recording', filename=rec.filename) }}" type="audio/mpeg">
+                    Ваш браузер не поддерживает аудио элемент.
+                </audio>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p>Нет доступных записей</p>
+        {% endif %}
     </div>
-
+    
     <script>
-        const audioPlayer = document.getElementById('audioPlayer');
-        const errorDiv = document.getElementById('error');
-
-        // Можно добавить обработчики событий плеера для отображения ошибок
-        audioPlayer.addEventListener('error', (e) => {
-            let errorMsg = 'Не удалось загрузить или воспроизвести аудиопоток.';
-            const mediaError = e.target.error;
-            if (mediaError) {
-                switch (mediaError.code) {
-                    case mediaError.MEDIA_ERR_ABORTED:
-                        errorMsg += ' Загрузка прервана.';
-                        break;
-                    case mediaError.MEDIA_ERR_NETWORK:
-                        errorMsg += ' Ошибка сети.';
-                        break;
-                    case mediaError.MEDIA_ERR_DECODE:
-                        errorMsg += ' Ошибка декодирования.';
-                        break;
-                    case mediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
-                        errorMsg += ' Формат аудио не поддерживается.';
-                        break;
-                    default:
-                        errorMsg += ' Неизвестная ошибка.';
-                        break;
-                }
-            }
-            console.error('Ошибка аудио плеера:', e);
-            errorDiv.textContent = errorMsg;
+        // Автоматически перезапускаем стрим при ошибках
+        document.querySelectorAll('audio').forEach(audio => {
+            audio.addEventListener('error', function() {
+                setTimeout(() => {
+                    audio.load();
+                    audio.play();
+                }, 1000);
+            });
         });
-
-         audioPlayer.addEventListener('stalled', () => {
-            console.warn('Аудио плеер: Поток данных приостановлен (stalled).');
-            errorDiv.textContent = 'Поток данных приостановлен. Возможно, проблемы с сетью или сервером.';
-        });
-
-         audioPlayer.addEventListener('waiting', () => {
-            console.log('Аудио плеер: Ожидание данных...');
-            errorDiv.textContent = 'Ожидание данных...'; // Можно убрать, если мешает
-        });
-
-         audioPlayer.addEventListener('playing', () => {
-            console.log('Аудио плеер: Воспроизведение началось.');
-            errorDiv.textContent = ''; // Очищаем ошибки при успешном старте
-        });
-
-        // Можно попытаться запустить воспроизведение при загрузке страницы,
-        // но автоплей часто блокируется браузерами.
-        // window.addEventListener('load', () => {
-        //     audioPlayer.play().catch(e => console.warn("Автовоспроизведение заблокировано:", e));
-        // });
-
     </script>
 </body>
 </html>
