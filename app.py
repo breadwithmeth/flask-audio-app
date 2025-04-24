@@ -20,7 +20,7 @@ RATE = 44100
 CHUNK = 1024 * 2
 RECORD_SECONDS_PER_FILE = 600  # 1 час
 RECORDINGS_DIR = "recordings"
-INPUT_DEVICE_INDEX = 3
+INPUT_DEVICE_INDEX = 5
 
 # --- Глобальные переменные ---
 recording_active = threading.Event()
@@ -199,6 +199,11 @@ def shutdown_handler(signum, frame):
     sys.exit(0)
 
 if __name__ == '__main__':
+    print("Доступные устройства ввода:")
+    list_audio_devices()
+    
+    print("\nИспользуется устройство с индексом:", INPUT_DEVICE_INDEX)
+    
     if not os.path.exists(RECORDINGS_DIR):
         os.makedirs(RECORDINGS_DIR)
 
@@ -209,5 +214,5 @@ if __name__ == '__main__':
     recording_thread = threading.Thread(target=record_audio)
     recording_thread.start()
 
-    print("Сервер запущен на http://0.0.0.0:5051")
+    print("\nСервер запущен на http://0.0.0.0:5051")
     app.run(host='0.0.0.0', port=5051, debug=False)
